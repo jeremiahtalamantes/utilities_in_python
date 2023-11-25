@@ -41,13 +41,13 @@ def make_request(url, username, password, username_field, password_field, error_
 
 
 # Perform brute action
-# url = the URL of the target using POST
 def brute(url, username_field, password_field, error_msg, bad_redirect):
-  # Usernames.txt is the local file to loop through
+  # ssernames.txt is the local file to loop through
   with open('usernames.txt', 'r', encoding='utf-8') as usernames:
     for username in usernames:
       username = username.strip()
       with open('passwords.txt', 'r', encoding='utf-8') as passwords:
+        # passwords.txt is the local file to loop through
         for password in passwords:
           password = password.strip()
           make_request(url, username, password, username_field, password_field, error_msg, bad_redirect)
